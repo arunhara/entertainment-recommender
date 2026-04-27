@@ -2,15 +2,16 @@
 
 ## Project Overview
 
-A personalized movie and TV series recommendation application that prioritizes hidden gems based on user preferences, watched history, and online review aggregation.
+A lightweight, notification-based entertainment recommendation service that runs in the background. It researches and consolidates links to quality movies and TV series, sends personalized recommendations via Slack/Email/WhatsApp, and maintains a watched list through simple message commands.
 
 ## Requirements Summary
 
 ### Core Features
-- **Recommendation Engine**: Suggest movies and TV series based on quality metrics and user preferences
-- **Watched List Management**: Track completed movies/series with easy "mark as watched" functionality
-- **Hidden Gems Focus**: Prioritize lesser-known quality content over mainstream popular titles
-- **Review Aggregation**: Analyze online reviews to ensure recommendations have positive reception
+- **Background Recommendation Engine**: Researches and consolidates links to quality content
+- **Notification Delivery**: Sends top recommendations via Slack, Email, or WhatsApp
+- **Message-Driven Watched List**: Update watched status by sending a message (e.g., "watched: The Bear")
+- **Hidden Gems Focus**: Prioritize lesser-known quality content over mainstream titles
+- **Link Consolidation**: Aggregate streaming links, reviews, and trailers in recommendations
 
 ### Filtering Criteria
 - **Minimum IMDB Rating**: 7.0 and above
@@ -31,24 +32,36 @@ A personalized movie and TV series recommendation application that prioritizes h
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React.js with TypeScript |
-| Backend | Python with FastAPI |
-| Database | SQLite (dev) / PostgreSQL (prod) |
-| Data Source | IMDB Datasets, TMDB API, OMDb API |
-| Review Analysis | Sentiment analysis on aggregated reviews |
+| Backend | Python (background service) |
+| Database | SQLite (simple, file-based) |
+| Notifications | Slack API, Twilio (WhatsApp), SendGrid (Email) |
+| Data Sources | IMDB Datasets, TMDB API, OMDb API, JustWatch |
+| Scheduler | APScheduler or cron |
 
 ### System Architecture
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   React Frontend │────▶│  FastAPI Backend │────▶│    Database     │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   External APIs     │
-                    │ (TMDB, OMDb, IMDB)  │
-                    └─────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    Background Service                            │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │  Scheduler   │  │  Research    │  │  Notifier    │          │
+│  │  (cron)      │──│  Engine      │──│  Service     │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│         │                │                   │                  │
+│         ▼                ▼                   ▼                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │   SQLite     │  │ External APIs│  │ Slack/Email/ │          │
+│  │   Database   │  │ (IMDB/TMDB)  │  │  WhatsApp    │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │   Message Input │
+                    │ (Slack bot/SMS) │
+                    │ "watched: X"    │
+                    └─────────────────┘
 ```
 
 ---
@@ -153,87 +166,72 @@ def calculate_hidden_gem_score(title):
 
 ---
 
-## API Design
+## Message Commands
 
-### Endpoints
-
-#### Recommendations
+### Watched List Updates (via Slack/WhatsApp/Email)
 ```
-GET /api/recommendations
-  Query params:
-    - type: 'movie' | 'series' | 'all'
-    - language: string (optional, filter by language)
-    - limit: integer (default: 20)
-    - exclude_watched: boolean (default: true)
-  Response: Array of recommended titles sorted by hidden_gem_score
+watched: The Bear                    → Mark "The Bear" as watched
+watched: Inception (2010)            → Mark specific title as watched
+finished: Breaking Bad               → Same as "watched:"
+rating: The Bear 9/10                → Add personal rating
+unwatched: The Bear                  → Remove from watched list
+list watched                         → Get your watched list
 ```
 
-#### Watched List
+### Recommendation Requests
 ```
-GET /api/watched
-  Query params:
-    - type: 'movie' | 'series' | 'all'
-    - sort: 'date' | 'rating' | 'title'
-  Response: Array of watched items
-
-POST /api/watched
-  Body: { title_id: UUID, rating?: number, notes?: string }
-  Response: Created watched item
-
-DELETE /api/watched/{id}
-  Response: 204 No Content
+recommend                            → Get today's top recommendations
+recommend movies                     → Movies only
+recommend series                     → TV series only
+recommend malayalam                  → Filter by language
+hidden gems                          → Get extra obscure recommendations
 ```
 
-#### Titles
-```
-GET /api/titles/{id}
-  Response: Full title details with reviews
-
-GET /api/titles/search
-  Query params:
-    - q: string (search query)
-    - type: 'movie' | 'series' | 'all'
-  Response: Array of matching titles
-```
+### Notification Format
+Each recommendation notification includes:
+- Title, Year, IMDB Rating
+- Why it's recommended (hidden gem score reason)
+- Consolidated links (streaming platforms, IMDB, trailers)
+- One-line review summary
+- Reply "watched: [title]" to mark as complete
 
 ---
 
 ## Development Phases
 
-### Phase 1: Foundation (Week 1-2)
-- [ ] Set up project structure (monorepo with frontend/backend)
-- [ ] Initialize FastAPI backend with basic routing
+### Phase 1: Foundation (Week 1)
+- [ ] Set up Python project structure
 - [ ] Set up SQLite database with SQLAlchemy ORM
-- [ ] Create database models and migrations
-- [ ] Initialize React frontend with TypeScript
+- [ ] Create database models (titles, watched_list, recommendations_sent)
+- [ ] Basic configuration management (API keys, notification preferences)
 
-### Phase 2: Data Integration (Week 3-4)
+### Phase 2: Data Integration (Week 2)
 - [ ] Download and parse IMDB datasets (title.basics, title.ratings)
 - [ ] Filter data by criteria (rating >= 7.0, votes >= 3000, target languages)
-- [ ] Set up TMDB API integration for additional metadata
-- [ ] Implement data import pipeline
-- [ ] Create scheduled job for data updates
+- [ ] Set up TMDB API integration for posters and streaming links
+- [ ] Implement data import/update pipeline
+- [ ] Create scheduled job for weekly data refresh
 
-### Phase 3: Core Features (Week 5-6)
-- [ ] Implement recommendations API with hidden gem algorithm
-- [ ] Build watched list CRUD operations
-- [ ] Create "Mark as Watched" functionality
-- [ ] Develop frontend components (title cards, lists, filters)
-- [ ] Implement search functionality
+### Phase 3: Notification Services (Week 3)
+- [ ] Slack bot integration (send recommendations, receive "watched" commands)
+- [ ] Email notifications via SendGrid
+- [ ] WhatsApp integration via Twilio (optional)
+- [ ] Message parser for watched list commands
+- [ ] Notification formatting with consolidated links
 
-### Phase 4: Review Aggregation (Week 7-8)
-- [ ] Integrate OMDb API for review data
-- [ ] Implement sentiment analysis on reviews
-- [ ] Update hidden gem scoring with sentiment data
-- [ ] Add review display in frontend
-- [ ] Create review quality indicators
+### Phase 4: Research & Link Consolidation (Week 4)
+- [ ] JustWatch integration for streaming availability
+- [ ] Review aggregation from multiple sources
+- [ ] Trailer link fetching (YouTube API)
+- [ ] Hidden gem scoring algorithm
+- [ ] Recommendation deduplication (don't re-recommend)
 
-### Phase 5: Polish & Deployment (Week 9-10)
-- [ ] Responsive design improvements
-- [ ] Performance optimization (caching, pagination)
-- [ ] User preferences and settings
-- [ ] Deployment configuration (Docker, CI/CD)
-- [ ] Documentation and testing
+### Phase 5: Background Service & Deployment (Week 5)
+- [ ] APScheduler or cron-based recommendation scheduling
+- [ ] Daily/weekly recommendation digest options
+- [ ] Docker containerization
+- [ ] Deployment to cloud (Railway/Fly.io/VPS)
+- [ ] Logging and monitoring
 
 ---
 
@@ -262,28 +260,34 @@ GET /api/titles/search
 
 ```
 entertainment-recommender/
-├── backend/
-│   ├── app/
+├── src/
+│   ├── __init__.py
+│   ├── main.py                 # Entry point, scheduler
+│   ├── config.py               # Configuration and API keys
+│   ├── models.py               # SQLAlchemy models
+│   ├── database.py             # Database connection
+│   ├── services/
 │   │   ├── __init__.py
-│   │   ├── main.py
-│   │   ├── models/
-│   │   ├── routers/
-│   │   ├── services/
-│   │   └── utils/
-│   ├── requirements.txt
-│   └── alembic/
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── hooks/
-│   │   └── services/
-│   ├── package.json
-│   └── tsconfig.json
+│   │   ├── imdb_service.py     # IMDB data fetching/parsing
+│   │   ├── tmdb_service.py     # TMDB API integration
+│   │   ├── research_service.py # Link consolidation, reviews
+│   │   └── recommender.py      # Hidden gem algorithm
+│   ├── notifiers/
+│   │   ├── __init__.py
+│   │   ├── slack_notifier.py   # Slack bot (send/receive)
+│   │   ├── email_notifier.py   # SendGrid integration
+│   │   └── whatsapp_notifier.py # Twilio WhatsApp
+│   └── parsers/
+│       ├── __init__.py
+│       └── message_parser.py   # Parse "watched:" commands
 ├── data/
-│   └── imdb/
+│   └── imdb/                   # Downloaded IMDB datasets
 ├── scripts/
-│   └── import_data.py
+│   ├── import_data.py          # Initial data import
+│   └── run_recommendations.py  # Manual recommendation trigger
+├── requirements.txt
+├── Dockerfile
+├── .env.example
 ├── PLAN.md
 └── README.md
 ```
@@ -292,16 +296,27 @@ entertainment-recommender/
 
 ## Success Metrics
 
-1. **Recommendation Quality**: Users discover content they wouldn't have found otherwise
+1. **Recommendation Quality**: Discover content you wouldn't have found otherwise
 2. **Hidden Gem Hit Rate**: >50% of recommendations are titles with <100k IMDB votes
-3. **Watched List Usage**: Easy one-click "mark as watched" with <2 second response time
-4. **Review Accuracy**: Sentiment analysis correlates with user satisfaction
+3. **Watched List Ease**: Simple message reply to mark as watched
+4. **Link Quality**: All recommendations include working streaming/IMDB/trailer links
+5. **No Repeats**: Never recommend something already watched or recently sent
+
+---
+
+## Notification Preferences
+
+Configurable options:
+- **Frequency**: Daily digest, weekly digest, or real-time
+- **Channel**: Slack (primary), Email, WhatsApp
+- **Count**: Number of recommendations per notification (default: 3-5)
+- **Quiet Hours**: Don't notify between certain hours
 
 ---
 
 ## Next Steps
 
-1. Initialize the project structure
-2. Set up the backend with FastAPI
-3. Create database models
-4. Begin IMDB data import pipeline
+1. Initialize Python project structure
+2. Set up SQLite database and models
+3. Build IMDB data import pipeline
+4. Set up Slack bot for notifications and watched commands
