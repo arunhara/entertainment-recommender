@@ -34,7 +34,7 @@ A lightweight, notification-based entertainment recommendation service that runs
 |-------|------------|
 | Backend | Python (background service) |
 | Database | SQLite (simple, file-based) |
-| Notifications | Slack API, Twilio (WhatsApp), SendGrid (Email) |
+| Notifications | Telegram Bot API (python-telegram-bot) |
 | Data Sources | IMDB Datasets, TMDB API, OMDb API, JustWatch |
 | Scheduler | APScheduler or cron |
 
@@ -51,15 +51,16 @@ A lightweight, notification-based entertainment recommendation service that runs
 │         │                │                   │                  │
 │         ▼                ▼                   ▼                  │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   SQLite     │  │ External APIs│  │ Slack/Email/ │          │
-│  │   Database   │  │ (IMDB/TMDB)  │  │  WhatsApp    │          │
+│  │   SQLite     │  │ External APIs│  │   Telegram   │          │
+│  │   Database   │  │ (IMDB/TMDB)  │  │     Bot      │          │
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
 └─────────────────────────────────────────────────────────────────┘
-                              │
+                              ▲
+                              │ Two-way
                               ▼
                     ┌─────────────────┐
-                    │   Message Input │
-                    │ (Slack bot/SMS) │
+                    │   You on        │
+                    │   Telegram      │
                     │ "watched: X"    │
                     └─────────────────┘
 ```
@@ -166,9 +167,9 @@ def calculate_hidden_gem_score(title):
 
 ---
 
-## Message Commands
+## Telegram Commands
 
-### Watched List Updates (via Slack/WhatsApp/Email)
+### Watched List Updates
 ```
 watched: The Bear                    → Mark "The Bear" as watched
 watched: Inception (2010)            → Mark specific title as watched
@@ -212,12 +213,12 @@ Each recommendation notification includes:
 - [ ] Implement data import/update pipeline
 - [ ] Create scheduled job for weekly data refresh
 
-### Phase 3: Notification Services (Week 3)
-- [ ] Slack bot integration (send recommendations, receive "watched" commands)
-- [ ] Email notifications via SendGrid
-- [ ] WhatsApp integration via Twilio (optional)
+### Phase 3: Telegram Bot (Week 3)
+- [ ] Create Telegram bot via BotFather
+- [ ] Set up python-telegram-bot library
+- [ ] Implement command handlers (/recommend, /watched, /list)
 - [ ] Message parser for watched list commands
-- [ ] Notification formatting with consolidated links
+- [ ] Rich notification formatting with inline buttons and links
 
 ### Phase 4: Research & Link Consolidation (Week 4)
 - [ ] JustWatch integration for streaming availability
@@ -272,14 +273,11 @@ entertainment-recommender/
 │   │   ├── tmdb_service.py     # TMDB API integration
 │   │   ├── research_service.py # Link consolidation, reviews
 │   │   └── recommender.py      # Hidden gem algorithm
-│   ├── notifiers/
-│   │   ├── __init__.py
-│   │   ├── slack_notifier.py   # Slack bot (send/receive)
-│   │   ├── email_notifier.py   # SendGrid integration
-│   │   └── whatsapp_notifier.py # Twilio WhatsApp
-│   └── parsers/
+│   └── telegram/
 │       ├── __init__.py
-│       └── message_parser.py   # Parse "watched:" commands
+│       ├── bot.py              # Telegram bot setup and handlers
+│       ├── commands.py         # /recommend, /watched, /list handlers
+│       └── formatters.py       # Rich message formatting
 ├── data/
 │   └── imdb/                   # Downloaded IMDB datasets
 ├── scripts/
@@ -304,11 +302,17 @@ entertainment-recommender/
 
 ---
 
-## Notification Preferences
+## Telegram Bot Features
+
+- **/recommend** - Get top recommendations now
+- **/recommend movies** - Movies only
+- **/recommend series** - TV series only  
+- **/watched [title]** - Mark as watched
+- **/list** - See your watched list
+- **/settings** - Configure notification frequency
 
 Configurable options:
-- **Frequency**: Daily digest, weekly digest, or real-time
-- **Channel**: Slack (primary), Email, WhatsApp
+- **Frequency**: Daily digest, weekly digest, or on-demand only
 - **Count**: Number of recommendations per notification (default: 3-5)
 - **Quiet Hours**: Don't notify between certain hours
 
@@ -319,4 +323,4 @@ Configurable options:
 1. Initialize Python project structure
 2. Set up SQLite database and models
 3. Build IMDB data import pipeline
-4. Set up Slack bot for notifications and watched commands
+4. Create Telegram bot via @BotFather and connect
