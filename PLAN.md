@@ -167,34 +167,22 @@ def calculate_hidden_gem_score(title):
 
 ---
 
-## Telegram Commands
+## Interaction Flow
 
-### Watched List Updates
-```
-watched: The Bear                    → Mark "The Bear" as watched
-watched: Inception (2010)            → Mark specific title as watched
-finished: Breaking Bad               → Same as "watched:"
-rating: The Bear 9/10                → Add personal rating
-unwatched: The Bear                  → Remove from watched list
-list watched                         → Get your watched list
-```
+### Daily/Weekly Digest
+1. Bot sends 3-5 recommendations with inline buttons
+2. Tap ✅ Watched / ⏭️ Skip / 📌 Save / 👎 Not for me
+3. Bot confirms and moves to next recommendation
 
-### Recommendation Requests
-```
-recommend                            → Get today's top recommendations
-recommend movies                     → Movies only
-recommend series                     → TV series only
-recommend malayalam                  → Filter by language
-hidden gems                          → Get extra obscure recommendations
-```
+### On-Demand
+1. Send `/recommend` or `/recommend movies`
+2. Get recommendations with inline buttons
+3. Tap to respond
 
-### Notification Format
-Each recommendation notification includes:
-- Title, Year, IMDB Rating
-- Why it's recommended (hidden gem score reason)
-- Consolidated links (streaming platforms, IMDB, trailers)
-- One-line review summary
-- Reply "watched: [title]" to mark as complete
+### Managing Your Lists
+- `/list watched` - See everything you've watched
+- `/list saved` - See your saved watchlist
+- `/stats` - Your watching stats and preferences
 
 ---
 
@@ -214,11 +202,12 @@ Each recommendation notification includes:
 - [ ] Create scheduled job for weekly data refresh
 
 ### Phase 3: Telegram Bot (Week 3)
-- [ ] Create Telegram bot via BotFather
-- [ ] Set up python-telegram-bot library
-- [ ] Implement command handlers (/recommend, /watched, /list)
-- [ ] Message parser for watched list commands
-- [ ] Rich notification formatting with inline buttons and links
+- [ ] Create Telegram bot via @BotFather
+- [ ] Set up python-telegram-bot library (v20+)
+- [ ] Implement command handlers (/recommend, /list, /settings)
+- [ ] Build inline keyboard buttons (Watched, Skip, Save, Not for me)
+- [ ] Callback query handlers for button responses
+- [ ] Rich message formatting with links and streaming info
 
 ### Phase 4: Research & Link Consolidation (Week 4)
 - [ ] JustWatch integration for streaming availability
@@ -304,14 +293,43 @@ entertainment-recommender/
 
 ## Telegram Bot Features
 
+### Commands
 - **/recommend** - Get top recommendations now
 - **/recommend movies** - Movies only
 - **/recommend series** - TV series only  
-- **/watched [title]** - Mark as watched
 - **/list** - See your watched list
 - **/settings** - Configure notification frequency
 
-Configurable options:
+### Inline Buttons (one-tap responses)
+Each recommendation includes these buttons:
+```
+┌───────────┬──────────┬──────────┬─────────────────┐
+│ ✅ Watched │ ⏭️ Skip │ 📌 Save  │ 👎 Not for me  │
+└───────────┴──────────┴──────────┴─────────────────┘
+```
+- **✅ Watched** - Adds to watched list, won't recommend again
+- **⏭️ Skip** - Not now, may recommend later
+- **📌 Save** - Save to watchlist for later
+- **👎 Not for me** - Won't recommend again, adjusts preferences
+
+### Notification Format
+```
+🎬 TITLE (Year)
+━━━━━━━━━━━━━━━━━━━━
+⭐ IMDB: X.X | 📺 Type | Seasons/Runtime
+🗣️ Language | 🍿 Genres
+
+Brief description...
+
+💎 Why this gem: [Reason for recommendation]
+
+📍 Where to watch: Platform links
+🔗 IMDB • Trailer • Reviews
+━━━━━━━━━━━━━━━━━━━━
+[Inline Buttons]
+```
+
+### Settings
 - **Frequency**: Daily digest, weekly digest, or on-demand only
 - **Count**: Number of recommendations per notification (default: 3-5)
 - **Quiet Hours**: Don't notify between certain hours
